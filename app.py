@@ -106,11 +106,7 @@ if run_analysis and uploaded_file:
 
     # ---- RTIS ----
     with st.spinner("Loading RTIS data..."):
-        rtis_df = load_rtis_file(
-            uploaded_file,
-            analysis_start,
-            analysis_end
-        )
+        rtis_df = load_rtis_file(uploaded_file)
 
     # ---- Section & Signals ----
     with st.spinner("Loading section and signal data..."):
