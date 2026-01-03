@@ -40,51 +40,6 @@ def plot_speed_vs_time(rtis_df, signal_df, stop_events_df, violation_df):
         )
     )
 
-    y_max = rtis_df["speed"].max() + 10
-
-    for start, end in _infer_station_spans(signal_df):
-        fig.add_vrect(
-            x0=start["sequence_no"],
-            x1=end["sequence_no"],
-            fillcolor="lightgrey",
-            opacity=0.15,
-            layer="below",
-            line_width=0,
-        )
-
-    for _, sig in signal_df.iterrows():
-        fig.add_annotation(
-            x=sig["sequence_no"],
-            y=y_max,
-            text=f"{sig['emoji']} {sig['signal_name']}",
-            showarrow=False,
-            font=dict(size=10),
-        )
-
-    for _, stop in stop_events_df.iterrows():
-        fig.add_trace(
-            go.Scatter(
-                x=[stop["stop_start_time"]],
-                y=[0],
-                mode="markers",
-                marker=dict(color="red", size=10),
-                name="Stop",
-                text=f"⛔ {stop['signal_name']}",
-            )
-        )
-
-    if not violation_df.empty:
-        fig.add_trace(
-            go.Scatter(
-                x=violation_df["reference_time"],
-                y=violation_df["observed_speed"],
-                mode="markers",
-                marker=dict(color="orange", size=9),
-                name="Violation",
-                text="⚠️ Speed Violation",
-            )
-        )
-
     fig.update_layout(
         title="Speed vs Time (Signal & Station Aware)",
         xaxis_title="Time",
@@ -93,7 +48,6 @@ def plot_speed_vs_time(rtis_df, signal_df, stop_events_df, violation_df):
     )
 
     return fig
-
 
 # -------------------------------------------------
 # GRAPH 2 — Speed vs Section Progression
