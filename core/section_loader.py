@@ -50,9 +50,9 @@ def load_section_data(section_name: str, direction: str):
         )
 
     # 3️⃣ Required files
-    ohe_file = section_path / "ohe_coordinates.xlsx"
-    signal_file = section_path / "signal_master.xlsx"
-    fsd_file = section_path / "fsd_signals.xlsx"
+    ohe_file = section_path / "ohe_coordinates.csv"
+    signal_file = section_path / "signal_master.csv"
+    fsd_file = section_path / "fsd_signals.csv"
 
     if not ohe_file.exists():
         raise SectionLoaderError(
@@ -66,9 +66,9 @@ def load_section_data(section_name: str, direction: str):
 
     # 4️⃣ Load datasets
     try:
-        ohe_df = pd.read_excel(ohe_file)
-        signal_master_df = pd.read_excel(signal_file)
-        fsd_df = pd.read_excel(fsd_file) if fsd_file.exists() else None
+        ohe_df = pd.read_csv(ohe_file)
+        signal_master_df = pd.read_csv(signal_file)
+        fsd_df = pd.read_csv(fsd_file) if fsd_file.exists() else None
     except Exception as e:
         raise SectionLoaderError(
             f"Failed to load section files: {e}"
