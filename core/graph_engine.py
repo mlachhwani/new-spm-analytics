@@ -89,7 +89,7 @@ def plot_speed_vs_time(
     if not violation_df.empty:
         fig.add_trace(
             go.Scatter(
-                x=violation_df["timestamp"],
+                x=violation_df["reference_time"],
                 y=violation_df["observed_speed"],
                 mode="markers",
                 marker=dict(color="orange", size=9),
