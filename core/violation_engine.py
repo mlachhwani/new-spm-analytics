@@ -18,8 +18,8 @@ def _get_speed_window(
     """
     start_time = ref_time - pd.Timedelta(seconds=lookback_seconds)
     return rtis_df[
-        (rtis_df["timestamp"] >= start_time) &
-        (rtis_df["timestamp"] <= ref_time)
+        (rtis_df["logging_time"] >= start_time) &
+        (rtis_df["logging_time"] <= ref_time)
     ]
 
 
