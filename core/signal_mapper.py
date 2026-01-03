@@ -15,9 +15,9 @@ def _infer_asset_type_and_emoji(signal_name: str):
     if "NEU SEC" in name:
         return "NEUTRAL_SECTION", "⚡"
     if "HOME" in name:
-        return "HOME", "🟥🚦"
+        return "HOME", "🚦"
     if any(k in name for k in ["STARTER", "STR", "ADV"]):
-        return "STARTER", "🟩🚦"
+        return "STARTER", "🚦"
     if any(k in name for k in ["DIST", "DNT"]):
         return "DISTANT", "🚦"
 
