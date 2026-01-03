@@ -38,7 +38,6 @@ def load_rtis_file(file):
     df["logging_time"] = pd.to_datetime(
         df["logging_time"],
         errors="coerce",
-        dayfirst=True,
     )
 
     df = df.dropna(subset=["logging_time", "latitude", "longitude", "speed"])
