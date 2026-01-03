@@ -33,7 +33,7 @@ def plot_speed_vs_time(rtis_df, signal_df, stop_events_df, violation_df):
 
     fig.add_trace(
         go.Scatter(
-            x=rtis_df["timestamp"],
+            x=rtis_df["logging_time"],
             y=rtis_df["speed"],
             mode="lines",
             name="Speed (kmph)",
