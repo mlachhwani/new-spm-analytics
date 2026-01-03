@@ -5,31 +5,30 @@ import pandas as pd
 
 
 # -------------------------------------------------
-# Helper: signal annotation shapes
+# Helper — infer station spans
 # -------------------------------------------------
-def _add_signal_annotations(fig, signal_events, y_max):
-    """
-    Add vertical lines & labels for signals.
-    """
-    for sig in signal_events:
-        fig.add_vline(
-            x=sig["x"],
-            line_width=1,
-            line_dash="dot",
-            line_color=sig.get("color", "gray"),
-        )
-        fig.add_annotation(
-            x=sig["x"],
-            y=y_max,
-            text=sig["label"],
-            showarrow=False,
-            yanchor="bottom",
-            font=dict(size=10),
-        )
+def _infer_station_spans(signal_df: pd.DataFrame):
+    spans = []
+    current_home = None
+
+    for _, row in signal_df.iterrows():
+        if row["asset_type"] == "HOME":
+            current_home = row
+        elif row["asset_type"] == "STARTER":
+            if current_home is not None:
+                spans.append((current_home, row))
+                current_home = None
+            else:
+                spans.append((row, row))
+
+    if current_home is not None:
+        spans.append((current_home, current_home))
+
+    return spans
 
 
 # -------------------------------------------------
-# GRAPH 1 — Time vs Speed
+# GRAPH 1 — Speed vs Time
 # -------------------------------------------------
 def plot_speed_vs_time(
     rtis_df: pd.DataFrame,
@@ -37,10 +36,6 @@ def plot_speed_vs_time(
     stop_events_df: pd.DataFrame,
     violation_df: pd.DataFrame,
 ):
-    """
-    Master graph: Speed vs Time with signal & stop annotations.
-    """
-
     fig = go.Figure()
 
     # Speed trace
@@ -55,16 +50,40 @@ def plot_speed_vs_time(
 
     y_max = rtis_df["speed"].max() + 10
 
-    # Signal annotations (RED stops only)
-    signal_events = []
-    for _, stop in stop_events_df.iterrows():
-        signal_events.append({
-            "x": stop["stop_start_time"],
-            "label": f'{stop["signal_name"]} (RED)',
-            "color": "red",
-        })
+    # Station spans (visual only)
+    spans = _infer_station_spans(signal_df)
+    for start, end in spans:
+        fig.add_vrect(
+            x0=start["sequence_no"],
+            x1=end["sequence_no"],
+            fillcolor="lightgrey",
+            opacity=0.15,
+            layer="below",
+            line_width=0,
+        )
 
-    _add_signal_annotations(fig, signal_events, y_max)
+    # Signal annotations
+    for _, sig in signal_df.iterrows():
+        fig.add_annotation(
+            x=sig["sequence_no"],
+            y=y_max,
+            text=f'{sig["emoji"]} {sig["signal_name"]}',
+            showarrow=False,
+            font=dict(size=10),
+        )
+
+    # Stop markers
+    for _, stop in stop_events_df.iterrows():
+        fig.add_trace(
+            go.Scatter(
+                x=[stop["stop_start_time"]],
+                y=[0],
+                mode="markers",
+                marker=dict(color="red", size=10),
+                name="Stop",
+                text=f'⛔ {stop["signal_name"]}',
+            )
+        )
 
     # Violation markers
     if not violation_df.empty:
@@ -73,14 +92,14 @@ def plot_speed_vs_time(
                 x=violation_df["timestamp"],
                 y=violation_df["observed_speed"],
                 mode="markers",
+                marker=dict(color="orange", size=9),
                 name="Violation",
-                marker=dict(color="orange", size=8),
-                text=violation_df["violation_type"],
+                text="⚠️ Speed Violation",
             )
         )
 
     fig.update_layout(
-        title="Speed vs Time",
+        title="Speed vs Time (Signal & Station Aware)",
         xaxis_title="Time",
         yaxis_title="Speed (kmph)",
         hovermode="x unified",
@@ -90,16 +109,12 @@ def plot_speed_vs_time(
 
 
 # -------------------------------------------------
-# GRAPH 2 — Speed vs Signal Sequence (Section Progression)
+# GRAPH 2 — Speed vs Section Progression
 # -------------------------------------------------
 def plot_speed_vs_section_progression(
     rtis_df: pd.DataFrame,
     signal_df: pd.DataFrame,
 ):
-    """
-    Speed vs logical section progression using signal sequence.
-    """
-
     fig = go.Figure()
 
     fig.add_trace(
@@ -113,20 +128,24 @@ def plot_speed_vs_section_progression(
 
     y_max = rtis_df["speed"].max() + 10
 
-    # Signal sequence annotations
-    signal_events = []
+    # Signal markers
     for _, sig in signal_df.iterrows():
-        signal_events.append({
-            "x": sig["sequence_no"],
-            "label": sig["signal_name"],
-            "color": "blue",
-        })
-
-    _add_signal_annotations(fig, signal_events, y_max)
+        fig.add_vline(
+            x=sig["sequence_no"],
+            line_dash="dot",
+            line_color="grey",
+        )
+        fig.add_annotation(
+            x=sig["sequence_no"],
+            y=y_max,
+            text=f'{sig["emoji"]}',
+            showarrow=False,
+            font=dict(size=12),
+        )
 
     fig.update_layout(
         title="Speed vs Section Progression",
-        xaxis_title="Section Progress (logical)",
+        xaxis_title="Section Progress (Logical)",
         yaxis_title="Speed (kmph)",
     )
 
@@ -134,52 +153,23 @@ def plot_speed_vs_section_progression(
 
 
 # -------------------------------------------------
-# GRAPH 3 — Pre-stop ±2000 m analysis
+# GRAPH 3 — Pre-stop ±2000 m
 # -------------------------------------------------
 def plot_pre_stop_analysis(
     rtis_df: pd.DataFrame,
     stop_event: dict,
     distance_column: str = "dist_from_speed",
-    window_m: int = 2000,
 ):
-    """
-    Speed vs distance before a RED signal stop.
-    """
-
     stop_time = stop_event["stop_start_time"]
 
-    # Use dist_from_speed as reference (as agreed)
-    df = rtis_df.copy()
-
-    # Identify stop index
-    stop_idx = df[df["timestamp"] == stop_time].index.min()
+    stop_idx = rtis_df[rtis_df["timestamp"] == stop_time].index.min()
     if pd.isna(stop_idx):
         return None
 
-    # Slice window
-    window_df = df.iloc[max(0, stop_idx - 500):stop_idx]
+    window_df = rtis_df.iloc[max(0, stop_idx - 500):stop_idx]
 
     fig = go.Figure()
 
     fig.add_trace(
         go.Scatter(
-            x=window_df[distance_column],
-            y=window_df["speed"],
-            mode="lines",
-            name="Speed (kmph)",
-        )
-    )
-
-    fig.add_vline(
-        x=window_df[distance_column].iloc[-1],
-        line_width=2,
-        line_color="red",
-    )
-
-    fig.update_layout(
-        title=f'Pre-stop Speed Analysis – {stop_event["signal_name"]}',
-        xaxis_title="Distance before signal (m)",
-        yaxis_title="Speed (kmph)",
-    )
-
-    return fig
+            x=window_df[distance_column_]()_
