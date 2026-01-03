@@ -4,6 +4,7 @@ class RTISLoaderError(Exception):
     pass
 
 REQUIRED_COLUMNS = [
+    "Logging Time",
     "Latitude",
     "Longitude",
     "Speed",
@@ -11,10 +12,10 @@ REQUIRED_COLUMNS = [
 ]
 
 COLUMN_MAP = {
+    "Logging Time": "logging_time",
     "Latitude": "latitude",
     "Longitude": "longitude",
     "Speed": "speed",
-    "distFromPrevLatLng": "dist_from_prev",
     "distFromSpeed": "dist_from_speed",
 }
 
@@ -25,15 +26,22 @@ def load_rtis_file(file):
     except Exception as e:
         raise RTISLoaderError(f"Failed to read RTIS file: {e}")
 
-    # ---- normalize columns ----
-    df = df.rename(columns=COLUMN_MAP)
-
-    missing = [v for v in COLUMN_MAP.values() if v not in df.columns]
+    # ---- validate columns ----
+    missing = [c for c in REQUIRED_COLUMNS if c not in df.columns]
     if missing:
         raise RTISLoaderError(f"Missing required columns: {missing}")
 
-    # ---- basic cleaning ----
-    df = df.dropna(subset=["latitude", "longitude", "speed"])
-    df = df.reset_index(drop=True)
+    # ---- normalize column names ----
+    df = df.rename(columns=COLUMN_MAP)
+
+    # ---- parse logging time ----
+    df["logging_time"] = pd.to_datetime(
+        df["logging_time"],
+        errors="coerce",
+        dayfirst=True,
+    )
+
+    df = df.dropna(subset=["logging_time", "latitude", "longitude", "speed"])
+    df = df.sort_values("logging_time").reset_index(drop=True)
 
     return df
