@@ -60,8 +60,8 @@ def detect_signal_stops(
     EXCLUDED_ASSETS = {"LEVEL_CROSSING", "NEUTRAL_SECTION"}
 
     for stop_df in stop_groups:
-        start_time = stop_df["timestamp"].iloc[0]
-        end_time = stop_df["timestamp"].iloc[-1]
+        start_time = stop_df["logging_time"].iloc[0]
+        end_time = stop_df["logging_time"].iloc[-1]
         duration_sec = (end_time - start_time).total_seconds()
 
         if duration_sec < min_stop_duration_sec:
