@@ -141,7 +141,7 @@ def plot_speed_vs_section_progression(rtis_df, signal_df):
 def plot_pre_stop_analysis(rtis_df, stop_event, distance_column="dist_from_speed"):
     stop_time = stop_event["stop_start_time"]
 
-    stop_idx = rtis_df[rtis_df["timestamp"] == stop_time].index.min()
+    stop_idx = rtis_df[rtis_df["logging_time"] == stop_time].index.min()
     if pd.isna(stop_idx):
         return None
 
