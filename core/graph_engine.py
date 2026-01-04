@@ -77,42 +77,65 @@ def plot_speed_vs_time(rtis_df, signal_df):
 # -------------------------------------------------
 # GRAPH 2 — Speed vs Section Progression
 # -------------------------------------------------
-def plot_speed_vs_section_progression(rtis_df, signal_df):
+def plot_speed_on_map(rtis_df, signal_df):
+    import plotly.graph_objects as go
+
     fig = go.Figure()
 
+    # ---- Train path ----
     fig.add_trace(
-        go.Scatter(
-            x=rtis_df.index,
-            y=rtis_df["speed"],
-            mode="lines",
-            name="Speed (kmph)",
+        go.Scattermapbox(
+            lat=rtis_df["latitude"],
+            lon=rtis_df["longitude"],
+            mode="lines+markers",
+            marker=dict(
+                size=6,
+                color=rtis_df["speed"],
+                colorscale="Turbo",
+                colorbar=dict(title="Speed (kmph)"),
+            ),
+            line=dict(width=3),
+            text=[
+                f"Speed: {s} kmph<br>Time: {t}"
+                for s, t in zip(rtis_df["speed"], rtis_df["logging_time"])
+            ],
+            hoverinfo="text",
+            name="Train Movement",
         )
     )
 
-    y_max = rtis_df["speed"].max() + 10
-
-    for _, sig in signal_df.iterrows():
-        fig.add_vline(
-            x=sig["sequence_no"],
-            line_dash="dot",
-            line_color="grey",
+    # ---- Signal markers ----
+    fig.add_trace(
+        go.Scattermapbox(
+            lat=signal_df["Latitude"],
+            lon=signal_df["Longitude"],
+            mode="markers+text",
+            marker=dict(size=14, color="red"),
+            text=[
+                f"{e} {n}"
+                for e, n in zip(signal_df["emoji"], signal_df["Signal_Name"])
+            ],
+            textposition="top center",
+            hoverinfo="text",
+            name="Signals",
         )
-        fig.add_annotation(
-            x=sig["sequence_no"],
-            y=y_max,
-            text=sig["emoji"],
-            showarrow=False,
-            font=dict(size=12),
-        )
+    )
 
+    # ---- Layout ----
     fig.update_layout(
-        title="Speed vs Section Progression",
-        xaxis_title="Section Progress (Logical)",
-        yaxis_title="Speed (kmph)",
+        title="Speed vs Section (Map View)",
+        mapbox=dict(
+            style="open-street-map",
+            zoom=9,
+            center=dict(
+                lat=rtis_df["latitude"].mean(),
+                lon=rtis_df["longitude"].mean(),
+            ),
+        ),
+        margin=dict(l=0, r=0, t=40, b=0),
     )
 
     return fig
-
 
 # -------------------------------------------------
 # GRAPH 3 — Pre-stop ±2000 m
