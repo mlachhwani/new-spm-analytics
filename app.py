@@ -223,5 +223,6 @@ else:
             mime="application/pdf",
         )
 
-else:
+if not run_analysis:
     st.info("Upload an RTIS file and click **Run Analysis** to begin.")
+
