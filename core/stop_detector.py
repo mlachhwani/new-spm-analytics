@@ -11,7 +11,7 @@ class StopDetectionError(Exception):
 
 # --- Helper: Haversine distance (meters) ---
 def haversine_distance(lat1, lon1, lat2, lon2):
-    R = 6371000  # Earth radius in meters
+    R = 6371000
     lat1, lon1, lat2, lon2 = map(radians, [lat1, lon1, lat2, lon2])
 
     dlat = lat2 - lat1
@@ -29,20 +29,12 @@ def detect_signal_stops(
     min_stop_duration_sec: int = 10,
     max_signal_radius_m: int = 150,
 ):
-    """
-    Detect signal-based stops (RED inference).
-
-    Stops near LEVEL_CROSSING or NEUTRAL_SECTION are ignored
-    for RED / violation logic.
-    """
-
     df = rtis_df.copy()
     df["is_stopped"] = df["speed"] <= stop_speed_threshold
 
     stop_groups = []
     current = []
 
-    # 1️⃣ Group consecutive stopped points
     for _, row in df.iterrows():
         if row["is_stopped"]:
             current.append(row)
@@ -55,8 +47,8 @@ def detect_signal_stops(
         stop_groups.append(pd.DataFrame(current))
 
     stop_events = []
+    stop_id = 1
 
-    # Assets that must NOT be treated as RED signals
     EXCLUDED_ASSETS = {"LEVEL_CROSSING", "NEUTRAL_SECTION"}
 
     for stop_df in stop_groups:
@@ -73,7 +65,6 @@ def detect_signal_stops(
         nearest_signal = None
         min_distance = np.inf
 
-        # 2️⃣ Find nearest asset
         for _, sig in signal_df.iterrows():
             dist = haversine_distance(
                 mean_lat, mean_lon,
@@ -83,16 +74,14 @@ def detect_signal_stops(
                 min_distance = dist
                 nearest_signal = sig
 
-        # 3️⃣ Validate proximity
         if nearest_signal is None or min_distance > max_signal_radius_m:
             continue
 
-        # 4️⃣ Exclude non-signal assets
         if nearest_signal["asset_type"] in EXCLUDED_ASSETS:
             continue
 
         stop_events.append({
-            "sequence_no": nearest_signal["sequence_no"],
+            "stop_id": stop_id,
             "signal_name": nearest_signal["signal_name"],
             "asset_type": nearest_signal["asset_type"],
             "emoji": nearest_signal["emoji"],
@@ -101,5 +90,7 @@ def detect_signal_stops(
             "stop_duration_sec": duration_sec,
             "distance_to_asset_m": round(min_distance, 2),
         })
+
+        stop_id += 1
 
     return pd.DataFrame(stop_events)
