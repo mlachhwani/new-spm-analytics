@@ -84,17 +84,18 @@ def map_signals_to_time(signal_df, rtis_df):
     rtis_coords = rtis_df[["latitude", "longitude"]].to_numpy()
 
     for _, sig in signal_df.iterrows():
-        sig_coord = np.array([sig["Latitude"], sig["Longitude"]])
+        sig_coord = np.array([sig["latitude"], sig["longitude"]])
 
-        # Euclidean distance (OK for short rail sections)
+        # Nearest RTIS point
         dists = np.linalg.norm(rtis_coords - sig_coord, axis=1)
         idx = dists.argmin()
 
         mapped.append({
-            "signal_name": sig["Signal_Name"],
-            "signal_type": sig.get("Signal_Type", ""),
-            "emoji": sig.get("emoji", "🚦"),
+            "signal_name": sig["signal_name"],
+            "asset_type": sig["asset_type"],
+            "emoji": sig["emoji"],
             "logging_time": rtis_df.loc[idx, "logging_time"],
         })
 
     return mapped
+
