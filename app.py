@@ -97,7 +97,7 @@ if run_analysis and uploaded_file:
 
     with st.spinner("Loading RTIS data..."):
         rtis_df = load_rtis_file(uploaded_file)
-        rtis_df["cum_distance"] = rtis_df["distFromSpeed"].cumsum()
+        rtis_df["cum_distance"] = rtis_df["dist_from_speed"].cumsum()
 
     with st.spinner("Loading section & signals..."):
         section_context = load_section_data(section, direction)
