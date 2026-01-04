@@ -140,12 +140,11 @@ if run_analysis and uploaded_file:
     )
     st.plotly_chart(fig_time, use_container_width=True)
 
-    st.subheader("📍 Speed vs Section Progression")
-    fig_section = plot_speed_vs_section_progression(
-        rtis_df,
-        signal_df
+    st.subheader("🚦 Speed vs Section (Map View)")
+    st.plotly_chart(
+        plot_speed_on_map(rtis_df, signal_df),
+        use_container_width=True
     )
-    st.plotly_chart(fig_section, use_container_width=True)
 
     if not stop_events_df.empty:
         st.subheader("⛔ Pre-Stop Speed Analysis (±2000 m)")
