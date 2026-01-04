@@ -28,9 +28,13 @@ def _infer_station_spans(signal_df: pd.DataFrame):
 # -------------------------------------------------
 # GRAPH 1 — Speed vs Time
 # -------------------------------------------------
-def plot_speed_vs_time(rtis_df, signal_df, stop_events_df, violation_df):
+def plot_speed_vs_time(rtis_df, signal_df):
+    import plotly.graph_objects as go
+    from core.signal_mapper import map_signals_to_time
+
     fig = go.Figure()
 
+    # ---- Speed line ----
     fig.add_trace(
         go.Scatter(
             x=rtis_df["logging_time"],
@@ -40,8 +44,29 @@ def plot_speed_vs_time(rtis_df, signal_df, stop_events_df, violation_df):
         )
     )
 
+    y_max = rtis_df["speed"].max() + 10
+
+    # ---- Map signals to time ----
+    mapped_signals = map_signals_to_time(signal_df, rtis_df)
+
+    for sig in mapped_signals:
+        fig.add_vline(
+            x=sig["logging_time"],
+            line_dash="dot",
+            line_color="grey",
+            opacity=0.6,
+        )
+
+        fig.add_annotation(
+            x=sig["logging_time"],
+            y=y_max,
+            text=f"{sig['emoji']} {sig['signal_name']}",
+            showarrow=False,
+            font=dict(size=10),
+        )
+
     fig.update_layout(
-        title="Speed vs Time (Signal & Station Aware)",
+        title="Speed vs Time with Signals",
         xaxis_title="Time",
         yaxis_title="Speed (kmph)",
         hovermode="x unified",
