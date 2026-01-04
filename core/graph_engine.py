@@ -140,35 +140,50 @@ def plot_speed_on_map(rtis_df, signal_df):
 # -------------------------------------------------
 # GRAPH 3 — Pre-stop ±2000 m
 # -------------------------------------------------
-def plot_pre_stop_analysis(rtis_df, stop_event, distance_column="dist_from_speed"):
+def plot_pre_stop_analysis(
+    rtis_df,
+    stop_event,
+    distance_col="distFromSpeed",
+    window_m=2000,
+):
     stop_time = stop_event["stop_start_time"]
 
     stop_idx = rtis_df[rtis_df["logging_time"] == stop_time].index.min()
     if pd.isna(stop_idx):
         return None
 
-    window_df = rtis_df.iloc[max(0, stop_idx - 500):stop_idx]
+    # Walk backwards until 2000 m is covered
+    cumulative = 0
+    rows = []
+
+    for i in range(stop_idx, -1, -1):
+        cumulative += rtis_df.loc[i, distance_col]
+        rows.append(i)
+        if cumulative >= window_m:
+            break
+
+    window_df = rtis_df.loc[sorted(rows)]
 
     fig = go.Figure()
 
     fig.add_trace(
         go.Scatter(
-            x=window_df[distance_column],
+            x=window_df[distance_col].cumsum(),
             y=window_df["speed"],
-            mode="lines",
-            name="Speed (kmph)",
+            mode="lines+markers",
+            name="Speed",
         )
     )
 
     fig.add_vline(
-        x=window_df[distance_column].iloc[-1],
-        line_width=2,
+        x=window_df[distance_col].cumsum().iloc[-1],
         line_color="red",
+        line_width=2,
     )
 
     fig.update_layout(
-        title=f"Pre-stop Speed Analysis ⛔ {stop_event['signal_name']}",
-        xaxis_title="Distance before stop (m)",
+        title=f"Pre-Stop Speed Analysis ⛔ {stop_event['signal_name']}",
+        xaxis_title="Distance before stop (meters)",
         yaxis_title="Speed (kmph)",
     )
 
