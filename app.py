@@ -146,15 +146,36 @@ if run_analysis and uploaded_file:
         use_container_width=True
     )
 
-    if not stop_events_df.empty:
-        st.subheader("⛔ Pre-Stop Speed Analysis (±2000 m)")
-        for _, stop in stop_events_df.iterrows():
-            fig_pre = plot_pre_stop_analysis(
-                rtis_df,
-                stop
-            )
-            if fig_pre:
-                st.plotly_chart(fig_pre, use_container_width=True)
+   # ---------------- PRE-STOP ANALYSIS ----------------
+st.subheader("⛔ Pre-Stop Speed Analysis (±2000 m)")
+
+if stop_events_df.empty:
+    st.info("No signal-based stops detected.")
+else:
+    stop_events_df["label"] = (
+        stop_events_df["emoji"]
+        + " "
+        + stop_events_df["signal_name"]
+        + " @ "
+        + stop_events_df["stop_start_time"].astype(str)
+    )
+
+    selected_label = st.selectbox(
+        "Select a stop to analyze",
+        stop_events_df["label"]
+    )
+
+    selected_stop = stop_events_df[
+        stop_events_df["label"] == selected_label
+    ].iloc[0]
+
+    fig_pre = plot_pre_stop_analysis(
+        rtis_df,
+        selected_stop
+    )
+
+    if fig_pre:
+        st.plotly_chart(fig_pre, use_container_width=True)
 
     # ---------------- REPORT ----------------
     st.subheader("📄 Generate Report")
